@@ -2,6 +2,8 @@
 
 A movie theatre seat booking UI built with React and TypeScript. Pick seats on an interactive grid, apply promo codes, review a full bill breakdown, and confirm bookings — all in the browser with no backend.
 
+![Theatre Seats booking UI](docs/screenshot.png)
+
 ## Features
 
 - **Interactive seat map** — 8×10 grid with VIP, Premium, and General pricing tiers, color-coded by category
