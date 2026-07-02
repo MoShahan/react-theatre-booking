@@ -16,6 +16,7 @@ export function SeatButton({
   config,
   onToggle,
 }: SeatButtonProps) {
+  // Available seats grey out at max capacity; selected ones stay clickable to deselect.
   const disabled = isSeatDisabled(seat.status, selected, config)
   const isSelected = seat.status === 'selected'
   const isBooked = seat.status === 'booked'
@@ -26,6 +27,7 @@ export function SeatButton({
       className={`seat seat--${seat.status}`}
       style={
         {
+          // Category colors are injected as CSS variables; stylesheets map them to borders/fills.
           '--seat-border': seat.category.colors.border,
           '--seat-fill': seat.category.colors.fill,
         } as CSSProperties

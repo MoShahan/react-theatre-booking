@@ -1,5 +1,9 @@
 import type { ShowConfig } from '../types/booking'
 
+/**
+ * Returns a new selection set after a click. Booked seats are ignored.
+ * Deselection always succeeds; new selections are blocked once maxSeats is reached.
+ */
 export function toggleSeat(
   seatId: string,
   selected: ReadonlySet<string>,
@@ -25,6 +29,10 @@ export function toggleSeat(
   return next
 }
 
+/**
+ * Controls whether a seat button accepts clicks. Already-selected seats stay
+ * enabled so the user can deselect them even when the max limit is reached.
+ */
 export function isSeatDisabled(
   status: 'available' | 'booked' | 'selected',
   selected: ReadonlySet<string>,

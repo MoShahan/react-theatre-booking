@@ -48,6 +48,7 @@ export function PromoCodeInput({
               <button
                 type="button"
                 className="promo-code__button"
+                // Only one promo can be active at a time.
                 disabled={Boolean(activePromoCode)}
                 onClick={() => onApply(promo.code)}
               >
