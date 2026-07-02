@@ -1,9 +1,11 @@
+import type { ShowLookups } from '../lib/lookups'
 import type { OrderSummary, ShowConfig } from '../types/booking'
 import { BillBreakdown } from './BillBreakdown'
 import { PromoCodeInput } from './PromoCodeInput'
 
 interface OrderSummaryPanelProps {
   config: ShowConfig
+  lookups: ShowLookups
   summary: OrderSummary
   activePromoCode: string | null
   promoError: string | null
@@ -14,6 +16,7 @@ interface OrderSummaryPanelProps {
 
 export function OrderSummaryPanel({
   config,
+  lookups,
   summary,
   activePromoCode,
   promoError,
@@ -39,7 +42,7 @@ export function OrderSummaryPanel({
         <p className="order-summary__empty">Select seats to see pricing</p>
       ) : null}
 
-      <BillBreakdown config={config} summary={summary} />
+      <BillBreakdown config={config} lookups={lookups} summary={summary} />
 
       <button
         type="button"

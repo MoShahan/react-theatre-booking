@@ -1,15 +1,15 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { SHOW_CONFIG } from '../config/showConfig'
+import { SHOW_CONFIG, SHOW_LOOKUPS } from '../config/showConfig'
 import { buildSeatGrid } from '../lib/seats'
 import { SeatGrid } from './SeatGrid'
 
 describe('SeatGrid', () => {
   it('renders all seat buttons', () => {
-    const seats = buildSeatGrid(SHOW_CONFIG, new Set())
+    const seatsByRow = buildSeatGrid(SHOW_CONFIG, new Set(), SHOW_LOOKUPS)
     render(
       <SeatGrid
-        seats={seats}
+        seatsByRow={seatsByRow}
         config={SHOW_CONFIG}
         selected={new Set()}
         onToggleSeat={vi.fn()}
@@ -22,10 +22,10 @@ describe('SeatGrid', () => {
   })
 
   it('disables booked seats', () => {
-    const seats = buildSeatGrid(SHOW_CONFIG, new Set())
+    const seatsByRow = buildSeatGrid(SHOW_CONFIG, new Set(), SHOW_LOOKUPS)
     render(
       <SeatGrid
-        seats={seats}
+        seatsByRow={seatsByRow}
         config={SHOW_CONFIG}
         selected={new Set()}
         onToggleSeat={vi.fn()}

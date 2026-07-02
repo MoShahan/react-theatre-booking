@@ -3,11 +3,19 @@ import { areSeatsInSameRow } from '../lib/adjacency'
 import { createConfirmedBooking } from '../lib/booking'
 import { calculateOrderSummary } from '../lib/pricing'
 import { validatePromoCode } from '../lib/promo'
+import { buildShowLookups } from '../lib/lookups'
 import { buildSeatGrid } from '../lib/seats'
 import { toggleSeat } from '../lib/selection'
 import type { ConfirmedBooking, Seat, ShowConfig } from '../types/booking'
 
+/**
+ * Central booking state: selection, promos, and confirmed bookings.
+ * Derived values (grid, pricing, warnings) recompute when their inputs change.
+ */
 export function useSeatBooking(config: ShowConfig) {
+  const lookups = useMemo(() => buildShowLookups(config), [config])
+
+  // Starts with pre-booked seats from config; grows as the user confirms bookings.
   const [bookedSeatIds, setBookedSeatIds] = useState<Set<string>>(
     () => new Set(config.bookedSeats),
   )
@@ -20,18 +28,19 @@ export function useSeatBooking(config: ShowConfig) {
     [],
   )
 
-  const seats = useMemo(
-    () => buildSeatGrid(config, selectedSeatIds, bookedSeatIds),
-    [config, selectedSeatIds, bookedSeatIds],
+  const seatsByRow = useMemo(
+    () => buildSeatGrid(config, selectedSeatIds, lookups, bookedSeatIds),
+    [config, selectedSeatIds, bookedSeatIds, lookups],
   )
 
   const orderSummary = useMemo(
-    () => calculateOrderSummary(selectedSeatIds, config, activePromoCode),
-    [config, selectedSeatIds, activePromoCode],
+    () => calculateOrderSummary(selectedSeatIds, config, lookups, activePromoCode),
+    [config, selectedSeatIds, activePromoCode, lookups],
   )
 
   const isAtMaxSeats = selectedSeatIds.size >= config.maxSeats
   const showMaxSeatsWarning = isAtMaxSeats
+  // Advisory only — cross-row selection is allowed but may leave gaps in the group.
   const showAdjacencyWarning =
     selectedSeatIds.size >= 2 &&
     !areSeatsInSameRow([...selectedSeatIds])
@@ -41,6 +50,7 @@ export function useSeatBooking(config: ShowConfig) {
     [confirmedBookings.length],
   )
 
+  // If the user changes seats after applying a promo, drop it when conditions no longer hold.
   const revalidateActivePromo = useCallback(
     (selectedSeats: ReadonlySet<string>) => {
       if (!activePromoCode) {
@@ -50,7 +60,7 @@ export function useSeatBooking(config: ShowConfig) {
       const result = validatePromoCode(
         activePromoCode,
         [...selectedSeats],
-        config,
+        lookups,
         promoContext,
       )
 
@@ -59,7 +69,7 @@ export function useSeatBooking(config: ShowConfig) {
         setPromoError(result.error)
       }
     },
-    [activePromoCode, config, promoContext],
+    [activePromoCode, lookups, promoContext],
   )
 
   const toggleSeatSelection = useCallback(
@@ -82,7 +92,7 @@ export function useSeatBooking(config: ShowConfig) {
       const result = validatePromoCode(
         code,
         [...selectedSeatIds],
-        config,
+        lookups,
         promoContext,
       )
 
@@ -93,7 +103,7 @@ export function useSeatBooking(config: ShowConfig) {
         setPromoError(null)
       }
     },
-    [config, selectedSeatIds, promoContext],
+    [selectedSeatIds, lookups, promoContext],
   )
 
   const removePromoCode = useCallback(() => {
@@ -106,8 +116,9 @@ export function useSeatBooking(config: ShowConfig) {
       return null
     }
 
-    const booking = createConfirmedBooking(orderSummary, config)
+    const booking = createConfirmedBooking(orderSummary, lookups)
 
+    // Move selected seats into booked state and reset the checkout flow for another round.
     setBookedSeatIds((current) => {
       const next = new Set(current)
       for (const seatId of selectedSeatIds) {
@@ -121,10 +132,10 @@ export function useSeatBooking(config: ShowConfig) {
     setPromoError(null)
 
     return booking
-  }, [config, orderSummary, selectedSeatIds])
+  }, [config, orderSummary, selectedSeatIds, lookups])
 
   return {
-    seats,
+    seatsByRow,
     selectedSeatIds,
     orderSummary,
     activePromoCode,
@@ -142,5 +153,5 @@ export function useSeatBooking(config: ShowConfig) {
 }
 
 export type UseSeatBookingReturn = ReturnType<typeof useSeatBooking> & {
-  seats: Seat[]
+  seatsByRow: Map<string, Seat[]>
 }

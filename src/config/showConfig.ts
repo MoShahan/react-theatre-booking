@@ -1,5 +1,7 @@
 import type { ShowConfig } from '../types/booking'
+import { buildShowLookups } from '../lib/lookups'
 
+/** Static show data: layout, pricing tiers, pre-booked seats, fees, and promo rules. */
 export const SHOW_CONFIG: ShowConfig = {
   movie: 'Avengers: Endgame',
   show: 'Saturday, 7:00 PM',
@@ -105,3 +107,5 @@ export const SHOW_CONFIG: ShowConfig = {
     },
   ],
 }
+
+export const SHOW_LOOKUPS = buildShowLookups(SHOW_CONFIG)

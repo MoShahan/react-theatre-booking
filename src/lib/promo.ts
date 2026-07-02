@@ -1,5 +1,6 @@
-import type { PromoCode, ShowConfig } from '../types/booking'
+import type { PromoCode } from '../types/booking'
 import { formatINR } from './format'
+import type { ShowLookups } from './lookups'
 import { getCategoryForRow, parseSeatId } from './seats'
 
 export interface PromoValidationContext {
@@ -12,31 +13,33 @@ export type PromoValidationResult =
 
 function getSeatCost(
   selectedSeats: readonly string[],
-  config: ShowConfig,
+  lookups: ShowLookups,
 ): number {
   return selectedSeats.reduce((sum, seatId) => {
     const { row } = parseSeatId(seatId)
-    return sum + getCategoryForRow(row, config).price
+    return sum + getCategoryForRow(row, lookups).price
   }, 0)
 }
 
 export function findPromoCode(
   code: string,
-  config: ShowConfig,
+  lookups: ShowLookups,
 ): PromoCode | undefined {
-  const normalized = code.trim().toUpperCase()
-  return config.promoCodes.find(
-    (promo) => promo.code.toUpperCase() === normalized,
-  )
+  return lookups.promoByCode.get(code.trim().toUpperCase())
 }
 
+/**
+ * Checks every condition on a promo before it can be applied. Category rules only
+ * run when both requiredCategory and requireAllSeats are set; excludedCategory
+ * blocks the promo if any selected seat is in that tier.
+ */
 export function validatePromoCode(
   code: string,
   selectedSeats: readonly string[],
-  config: ShowConfig,
+  lookups: ShowLookups,
   context: PromoValidationContext = { confirmedBookingCount: 0 },
 ): PromoValidationResult {
-  const promo = findPromoCode(code, config)
+  const promo = findPromoCode(code, lookups)
 
   if (!promo) {
     return { valid: false, error: 'Promo code not found.' }
@@ -46,7 +49,7 @@ export function validatePromoCode(
     return { valid: false, error: 'Select at least one seat to apply a promo code.' }
   }
 
-  const seatCost = getSeatCost(selectedSeats, config)
+  const seatCost = getSeatCost(selectedSeats, lookups)
 
   if (seatCost < promo.conditions.minOrderValue) {
     return {
@@ -68,7 +71,7 @@ export function validatePromoCode(
   if (requiredCategory && requireAllSeats) {
     const allMatchCategory = selectedSeats.every((seatId) => {
       const { row } = parseSeatId(seatId)
-      return getCategoryForRow(row, config).name === requiredCategory
+      return getCategoryForRow(row, lookups).name === requiredCategory
     })
 
     if (!allMatchCategory) {
@@ -82,7 +85,7 @@ export function validatePromoCode(
   if (excludedCategory) {
     const hasExcludedSeat = selectedSeats.some((seatId) => {
       const { row } = parseSeatId(seatId)
-      return getCategoryForRow(row, config).name === excludedCategory
+      return getCategoryForRow(row, lookups).name === excludedCategory
     })
 
     if (hasExcludedSeat) {
@@ -96,6 +99,7 @@ export function validatePromoCode(
   return { valid: true, promo }
 }
 
+/** Percentage promos round to the nearest rupee; flat promos cannot exceed seat cost. */
 export function calculatePromoDiscount(
   seatCost: number,
   promo: PromoCode,

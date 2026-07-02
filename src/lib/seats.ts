@@ -1,11 +1,14 @@
 import type { Seat, SeatCategory, ShowConfig } from '../types/booking'
+import type { ShowLookups } from './lookups'
 
+/** Maps row index to theatre labels: 0 → "A", 1 → "B", etc. */
 export function getRowLabels(rows: number): string[] {
   return Array.from({ length: rows }, (_, i) =>
     String.fromCharCode(65 + i),
   )
 }
 
+/** Splits a seat id like "C12" into its row letters and column number. */
 export function parseSeatId(id: string): { row: string; col: number } {
   const match = id.match(/^([A-Z]+)(\d+)$/)
   if (!match) {
@@ -18,28 +21,36 @@ export function formatSeatId(row: string, col: number): string {
   return `${row}${col}`
 }
 
+/** O(1) row → category lookup via prebuilt index. */
 export function getCategoryForRow(
   row: string,
-  config: ShowConfig,
+  lookups: ShowLookups,
 ): SeatCategory {
-  const category = config.seatCategories.find((c) => c.rows.includes(row))
+  const category = lookups.rowToCategory.get(row)
   if (!category) {
     throw new Error(`No category found for row ${row}`)
   }
   return category
 }
 
+/**
+ * Builds the full seat list from config. Status priority is booked > selected >
+ * available so a seat cannot appear selected once it has been confirmed.
+ */
 export function buildSeatGrid(
   config: ShowConfig,
   selectedIds: ReadonlySet<string>,
+  lookups: ShowLookups,
   bookedSeats: ReadonlySet<string> = new Set(config.bookedSeats),
-): Seat[] {
+): Map<string, Seat[]> {
   const bookedSet = bookedSeats
   const rowLabels = getRowLabels(config.rows)
-  const seats: Seat[] = []
+  const seatsByRow = new Map<string, Seat[]>()
 
   for (const row of rowLabels) {
-    const category = getCategoryForRow(row, config)
+    const category = getCategoryForRow(row, lookups)
+    const rowSeats: Seat[] = []
+
     for (let col = 1; col <= config.cols; col++) {
       const id = formatSeatId(row, col)
       let status: Seat['status'] = 'available'
@@ -49,7 +60,7 @@ export function buildSeatGrid(
         status = 'selected'
       }
 
-      seats.push({
+      rowSeats.push({
         id,
         row,
         col,
@@ -58,7 +69,9 @@ export function buildSeatGrid(
         price: category.price,
       })
     }
+
+    seatsByRow.set(row, rowSeats)
   }
 
-  return seats
+  return seatsByRow
 }

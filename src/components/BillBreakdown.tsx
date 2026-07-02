@@ -1,16 +1,19 @@
 import { formatINR } from '../lib/format'
+import { findPromoCode } from '../lib/promo'
+import type { ShowLookups } from '../lib/lookups'
 import type { OrderSummary, ShowConfig } from '../types/booking'
 
 interface BillBreakdownProps {
   config: ShowConfig
+  lookups: ShowLookups
   summary: OrderSummary
 }
 
-export function BillBreakdown({ config, summary }: BillBreakdownProps) {
+export function BillBreakdown({ config, lookups, summary }: BillBreakdownProps) {
   const hasSelection = summary.selectedSeats.length > 0
-  const appliedPromo = config.promoCodes.find(
-    (promo) => promo.code === summary.appliedPromoCode,
-  )
+  const appliedPromo = summary.appliedPromoCode
+    ? findPromoCode(summary.appliedPromoCode, lookups)
+    : undefined
 
   return (
     <dl className="order-summary__breakdown">
@@ -55,6 +58,7 @@ export function BillBreakdown({ config, summary }: BillBreakdownProps) {
 
       <div>
         <dt>Convenience fee</dt>
+        {/* Fee is waived when discounted seat cost exceeds the config threshold. */}
         <dd className={summary.feeWaived ? 'order-summary__waived' : undefined}>
           {summary.feeWaived ? 'Waived' : formatINR(summary.convenienceFee)}
         </dd>

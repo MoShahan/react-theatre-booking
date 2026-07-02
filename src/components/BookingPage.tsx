@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { SHOW_CONFIG } from '../config/showConfig'
+import { SHOW_CONFIG, SHOW_LOOKUPS } from '../config/showConfig'
 import { useSeatBooking } from '../hooks/useSeatBooking'
 import { CategoryLabels } from './CategoryLabels'
 import { ConfirmedBookingSummary } from './ConfirmedBookingSummary'
@@ -13,7 +13,7 @@ import { WarningBanner } from './WarningBanner'
 export function BookingPage() {
   const seatMapRef = useRef<HTMLElement>(null)
   const {
-    seats,
+    seatsByRow,
     selectedSeatIds,
     orderSummary,
     activePromoCode,
@@ -33,6 +33,7 @@ export function BookingPage() {
   }
 
   const handleBookMore = () => {
+    // Scroll back to the seat map so the user can start another selection.
     seatMapRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
@@ -51,7 +52,7 @@ export function BookingPage() {
 
           <div className="seat-map-section__grid-wrap">
             <SeatGrid
-              seats={seats}
+              seatsByRow={seatsByRow}
               config={SHOW_CONFIG}
               selected={selectedSeatIds}
               onToggleSeat={toggleSeat}
@@ -75,6 +76,7 @@ export function BookingPage() {
 
         <OrderSummaryPanel
           config={SHOW_CONFIG}
+          lookups={SHOW_LOOKUPS}
           summary={orderSummary}
           activePromoCode={activePromoCode}
           promoError={promoError}
@@ -105,6 +107,7 @@ export function BookingPage() {
                 key={booking.bookingId}
                 booking={booking}
                 config={SHOW_CONFIG}
+                lookups={SHOW_LOOKUPS}
                 onBookMore={handleBookMore}
               />
             ))}

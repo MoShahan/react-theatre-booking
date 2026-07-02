@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { SHOW_CONFIG } from '../config/showConfig'
+import { SHOW_CONFIG, SHOW_LOOKUPS } from '../config/showConfig'
 import {
   buildSeatGrid,
   getCategoryForRow,
   getRowLabels,
+  parseSeatId,
 } from './seats'
+
+function getSeat(seatsByRow: Map<string, { id: string; status: string; price: number }[]>, seatId: string) {
+  const { row } = parseSeatId(seatId)
+  return seatsByRow.get(row)?.find((seat) => seat.id === seatId)
+}
 
 describe('seats', () => {
   it('generates row labels from row count', () => {
@@ -12,20 +18,24 @@ describe('seats', () => {
   })
 
   it('resolves category for a row from config', () => {
-    expect(getCategoryForRow('C', SHOW_CONFIG).name).toBe('Premium')
-    expect(getCategoryForRow('A', SHOW_CONFIG).name).toBe('VIP')
-    expect(getCategoryForRow('G', SHOW_CONFIG).name).toBe('General')
+    expect(getCategoryForRow('C', SHOW_LOOKUPS).name).toBe('Premium')
+    expect(getCategoryForRow('A', SHOW_LOOKUPS).name).toBe('VIP')
+    expect(getCategoryForRow('G', SHOW_LOOKUPS).name).toBe('General')
   })
 
   it('builds a grid with booked and selected states', () => {
     const selected = new Set(['A5', 'A6'])
-    const seats = buildSeatGrid(SHOW_CONFIG, selected)
+    const seatsByRow = buildSeatGrid(SHOW_CONFIG, selected, SHOW_LOOKUPS)
 
-    expect(seats).toHaveLength(SHOW_CONFIG.rows * SHOW_CONFIG.cols)
+    const totalSeats = [...seatsByRow.values()].reduce(
+      (sum, row) => sum + row.length,
+      0,
+    )
+    expect(totalSeats).toBe(SHOW_CONFIG.rows * SHOW_CONFIG.cols)
 
-    const a1 = seats.find((seat) => seat.id === 'A1')
-    const a5 = seats.find((seat) => seat.id === 'A5')
-    const c2 = seats.find((seat) => seat.id === 'C2')
+    const a1 = getSeat(seatsByRow, 'A1')
+    const a5 = getSeat(seatsByRow, 'A5')
+    const c2 = getSeat(seatsByRow, 'C2')
 
     expect(a1?.status).toBe('booked')
     expect(a5?.status).toBe('selected')

@@ -1,16 +1,19 @@
 import { formatINR } from '../lib/format'
+import type { ShowLookups } from '../lib/lookups'
 import type { ConfirmedBooking, ShowConfig } from '../types/booking'
 import { BillBreakdown } from './BillBreakdown'
 
 interface ConfirmedBookingSummaryProps {
   booking: ConfirmedBooking
   config: ShowConfig
+  lookups: ShowLookups
   onBookMore: () => void
 }
 
 export function ConfirmedBookingSummary({
   booking,
   config,
+  lookups,
   onBookMore,
 }: ConfirmedBookingSummaryProps) {
   return (
@@ -31,7 +34,7 @@ export function ConfirmedBookingSummary({
         ))}
       </ul>
 
-      <BillBreakdown config={config} summary={booking.summary} />
+      <BillBreakdown config={config} lookups={lookups} summary={booking.summary} />
 
       <button
         type="button"

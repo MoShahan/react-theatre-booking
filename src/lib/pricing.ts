@@ -1,4 +1,5 @@
 import type { CategoryCost, OrderSummary, ShowConfig } from '../types/booking'
+import type { ShowLookups } from './lookups'
 import { calculatePromoDiscount, findPromoCode } from './promo'
 import { getCategoryForRow, parseSeatId } from './seats'
 
@@ -16,18 +17,21 @@ const EMPTY_SUMMARY: OrderSummary = {
   feeWaived: false,
 }
 
+/** Groups selected seats by category and returns line items in config display order. */
 export function getCategoryCosts(
   selectedSeats: readonly string[],
   config: ShowConfig,
+  lookups: ShowLookups,
 ): CategoryCost[] {
   const counts = new Map<string, number>()
 
   for (const seatId of selectedSeats) {
     const { row } = parseSeatId(seatId)
-    const category = getCategoryForRow(row, config)
+    const category = getCategoryForRow(row, lookups)
     counts.set(category.name, (counts.get(category.name) ?? 0) + 1)
   }
 
+  // Iterate seatCategories (not the map) so VIP → Premium → General order is stable.
   return config.seatCategories
     .filter((category) => counts.has(category.name))
     .map((category) => {
@@ -41,9 +45,15 @@ export function getCategoryCosts(
     })
 }
 
+/**
+ * Derives the full bill from the current selection. Pipeline:
+ * seat cost → promo discount → GST on discounted amount → convenience fee (waived
+ * when discounted total exceeds threshold) → grand total.
+ */
 export function calculateOrderSummary(
   selectedIds: ReadonlySet<string>,
   config: ShowConfig,
+  lookups: ShowLookups,
   activePromoCode: string | null = null,
 ): OrderSummary {
   const selectedSeats = [...selectedIds].sort()
@@ -52,9 +62,9 @@ export function calculateOrderSummary(
     return { ...EMPTY_SUMMARY }
   }
 
-  const categoryCosts = getCategoryCosts(selectedSeats, config)
+  const categoryCosts = getCategoryCosts(selectedSeats, config, lookups)
   const seatCost = categoryCosts.reduce((sum, line) => sum + line.total, 0)
-  const promo = activePromoCode ? findPromoCode(activePromoCode, config) : undefined
+  const promo = activePromoCode ? findPromoCode(activePromoCode, lookups) : undefined
   const promoDiscount = promo ? calculatePromoDiscount(seatCost, promo) : 0
   const discountedSeatCost = seatCost - promoDiscount
   const gst = Math.round((discountedSeatCost * config.gstPercent) / 100)

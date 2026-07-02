@@ -5,26 +5,19 @@ import type { ShowConfig } from '../types/booking'
 import { SeatButton } from './Seat'
 
 interface SeatGridProps {
-  seats: Seat[]
+  seatsByRow: ReadonlyMap<string, readonly Seat[]>
   config: ShowConfig
   selected: ReadonlySet<string>
   onToggleSeat: (seatId: string) => void
 }
 
 export function SeatGrid({
-  seats,
+  seatsByRow,
   config,
   selected,
   onToggleSeat,
 }: SeatGridProps) {
   const rowLabels = getRowLabels(config.rows)
-  const seatsByRow = new Map<string, Seat[]>()
-
-  for (const seat of seats) {
-    const rowSeats = seatsByRow.get(seat.row) ?? []
-    rowSeats.push(seat)
-    seatsByRow.set(seat.row, rowSeats)
-  }
 
   return (
     <div

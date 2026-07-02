@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { SHOW_CONFIG } from '../config/showConfig'
+import { SHOW_CONFIG, SHOW_LOOKUPS } from '../config/showConfig'
+import { buildShowLookups } from './lookups'
 import { calculateOrderSummary, getCategoryCosts } from './pricing'
 
 describe('pricing', () => {
   it('returns zero totals when no seats are selected', () => {
-    const summary = calculateOrderSummary(new Set(), SHOW_CONFIG)
+    const summary = calculateOrderSummary(new Set(), SHOW_CONFIG, SHOW_LOOKUPS)
     expect(summary).toEqual({
       selectedSeats: [],
       categoryCosts: [],
@@ -21,9 +22,9 @@ describe('pricing', () => {
   })
 
   it('groups seat cost by category', () => {
-    const summary = calculateOrderSummary(new Set(['A5', 'A6', 'C2']), SHOW_CONFIG)
+    const summary = calculateOrderSummary(new Set(['A5', 'A6', 'C2']), SHOW_CONFIG, SHOW_LOOKUPS)
 
-    expect(getCategoryCosts(['A5', 'A6', 'C2'], SHOW_CONFIG)).toEqual([
+    expect(getCategoryCosts(['A5', 'A6', 'C2'], SHOW_CONFIG, SHOW_LOOKUPS)).toEqual([
       { categoryName: 'VIP', count: 2, unitPrice: 500, total: 1000 },
       { categoryName: 'Premium', count: 1, unitPrice: 300, total: 300 },
     ])
@@ -34,6 +35,7 @@ describe('pricing', () => {
     const summary = calculateOrderSummary(
       new Set(['A5', 'A6']),
       SHOW_CONFIG,
+      SHOW_LOOKUPS,
       'SUPER10',
     )
 
@@ -44,14 +46,14 @@ describe('pricing', () => {
   })
 
   it('calculates GST on discounted seat cost only', () => {
-    const summary = calculateOrderSummary(new Set(['F4', 'F5']), SHOW_CONFIG)
+    const summary = calculateOrderSummary(new Set(['F4', 'F5']), SHOW_CONFIG, SHOW_LOOKUPS)
 
     expect(summary.gst).toBe(Math.round((200 * 18) / 100))
     expect(summary.grandTotal).toBe(200 + summary.gst + summary.convenienceFee)
   })
 
   it('adds convenience fee after GST', () => {
-    const summary = calculateOrderSummary(new Set(['F4', 'F5']), SHOW_CONFIG)
+    const summary = calculateOrderSummary(new Set(['F4', 'F5']), SHOW_CONFIG, SHOW_LOOKUPS)
 
     expect(summary.convenienceFee).toBe(49)
     expect(summary.feeWaived).toBe(false)
@@ -62,6 +64,7 @@ describe('pricing', () => {
     const summary = calculateOrderSummary(
       new Set(['A5', 'A6', 'B6']),
       SHOW_CONFIG,
+      SHOW_LOOKUPS,
       'SUPER10',
     )
 
@@ -76,7 +79,8 @@ describe('pricing', () => {
       ...SHOW_CONFIG,
       convenienceFeeWaiverThreshold: 1000,
     }
-    const summary = calculateOrderSummary(new Set(['A5', 'A6']), config)
+    const lookups = buildShowLookups(config)
+    const summary = calculateOrderSummary(new Set(['A5', 'A6']), config, lookups)
 
     expect(summary.discountedSeatCost).toBe(1000)
     expect(summary.feeWaived).toBe(false)
@@ -87,6 +91,7 @@ describe('pricing', () => {
     const summary = calculateOrderSummary(
       new Set(['A5', 'A6', 'C2']),
       SHOW_CONFIG,
+      SHOW_LOOKUPS,
       'SUPER10',
     )
 

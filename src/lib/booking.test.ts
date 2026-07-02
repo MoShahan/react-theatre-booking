@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { SHOW_CONFIG } from '../config/showConfig'
+import { SHOW_CONFIG, SHOW_LOOKUPS } from '../config/showConfig'
 import { createConfirmedBooking } from './booking'
 import { calculateOrderSummary } from './pricing'
 
@@ -8,9 +8,10 @@ describe('booking', () => {
     const summary = calculateOrderSummary(
       new Set(['A5', 'A6', 'C2']),
       SHOW_CONFIG,
+      SHOW_LOOKUPS,
       'SUPER10',
     )
-    const booking = createConfirmedBooking(summary, SHOW_CONFIG)
+    const booking = createConfirmedBooking(summary, SHOW_LOOKUPS)
 
     expect(booking.bookingId).toMatch(/^BMS-[A-Z0-9]{8}$/)
     expect(booking.seats).toEqual([

@@ -2,8 +2,8 @@ import type {
   BookedSeatDetail,
   ConfirmedBooking,
   OrderSummary,
-  ShowConfig,
 } from '../types/booking'
+import type { ShowLookups } from './lookups'
 import { getCategoryForRow, parseSeatId } from './seats'
 
 const BOOKING_ID_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -21,11 +21,11 @@ export function generateBookingId(): string {
 
 export function createSeatDetails(
   selectedSeats: readonly string[],
-  config: ShowConfig,
+  lookups: ShowLookups,
 ): BookedSeatDetail[] {
   return selectedSeats.map((seatId) => {
     const { row } = parseSeatId(seatId)
-    const category = getCategoryForRow(row, config)
+    const category = getCategoryForRow(row, lookups)
     return {
       seatId,
       categoryName: category.name,
@@ -34,13 +34,14 @@ export function createSeatDetails(
   })
 }
 
+/** Snapshots the order summary at confirmation time so later price changes don't affect it. */
 export function createConfirmedBooking(
   summary: OrderSummary,
-  config: ShowConfig,
+  lookups: ShowLookups,
 ): ConfirmedBooking {
   return {
     bookingId: generateBookingId(),
-    seats: createSeatDetails(summary.selectedSeats, config),
+    seats: createSeatDetails(summary.selectedSeats, lookups),
     summary: { ...summary },
   }
 }
